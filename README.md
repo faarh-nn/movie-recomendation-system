@@ -108,10 +108,8 @@ Berikutnya dilakukan analisis film berdasarkan rating untuk mengidentifikasi fil
 
 Berdasarkan output di atas, terlihat bahwa film *Terminator 3: Rise of the Machines* berada di urutan teratas dengan 324 rating dan rata-rata skor 4.25, diikuti oleh *The Million Dollar Hotel* yang memiliki rata-rata skor tertinggi sebesar 4.49 dari 311 pengguna. Meskipun bukan film yang paling dikenal luas, film-film ini mendapat perhatian signifikan dari pengguna dan memiliki **penilaian rata-rata yang tergolong tinggi**, menunjukkan bahwa film-film ini cukup **populer dan diapresiasi positif oleh penonton**.
 
-## Data Preparation
-### Penyesuaian Dataset Movies
-Dalam proses pembangunan model rekomendasi pada project ini, tidak semua fitur dari dataset movies diguakan, fitur yang digunakan hanya `id`, `genres`, `title`, `vote_average`, dan `vote_count`. Untuk itu dilakukan penyederhanaan fitur pada dataset movies dengan hanya menyertakan fitur-fitur tersebut.
-### Identifikasi dan Penanganan Missing Value
+### Dataset Movies dan Ratings
+#### Identifikasi Missing Value
 Proses identifikasi missing value dilakukan baik pada dataset movies maupun pada dataset ratings. Namun, setelah dilakukan identifikasi, ternyata missing value hanya terdapat dataset movies dengan rincian disajikan pada tabel berikut:
 | Nama Fitur    | Jumlah Missing Value | Persentase Missing Value | Tipe Data |
 |---------------|----------------------|---------------------------|-----------|
@@ -121,8 +119,14 @@ Proses identifikasi missing value dilakukan baik pada dataset movies maupun pada
 | vote_average  | 6                    | 0.013197                  | float64   |
 | vote_count    | 6                    | 0.013197                  | float64   |
 
-Berdasarkan output di atas, terlihat bahwa terdapat tiga fitur yang memiliki missing value pada dataset movies, yaitu `title`, `vote_average`, dan `vote_count`. Namun persentase missing value dari masing-masing fitur tersebut relatif kecil yaitu dibawah 1%, sehingga langkah treatmen atau penanganan yang dapat diambil adalah menghapus observasi missing tersebut.
-### Identifikasi dan Penanganan Duplikasi Data
+Berdasarkan output di atas, terlihat bahwa terdapat tiga fitur yang memiliki missing value pada dataset movies, yaitu `title`, `vote_average`, dan `vote_count`. Namun persentase missing value dari masing-masing fitur tersebut relatif kecil yaitu dibawah 1%.
+
+## Data Preparation
+### Penyesuaian Dataset Movies
+Dalam proses pembangunan model rekomendasi pada project ini, tidak semua fitur dari dataset movies diguakan, fitur yang digunakan hanya `id`, `genres`, `title`, `vote_average`, dan `vote_count`. Untuk itu dilakukan penyederhanaan fitur pada dataset movies dengan hanya menyertakan fitur-fitur tersebut.
+### Penanganan Missing Value
+Berdasarkan identifikasi missing value pada proses data understanding sebelumnya, diketahui bahwa terdapat tiga fitur yang memiliki missing value pada dataset movies, yaitu `title`, `vote_average`, dan `vote_count`. Namun karena persentase missing value dari masing-masing fitur tersebut relatif kecil yaitu dibawah 1%, maka langkah penanganan yang diambil adalah penghapusan observasi missing karena penghapusan observasi dengan jumlah yang kecil (misalnya di bawah 1%) tidak akan menimbulkan kehilangan informasi yang signifikan pada dataset.
+### Penanganan Duplikasi Data
 Proses identifikasi duplikasi data juga dilakukan baik pada dataset movies maupun dataset ratings. Namun, setelah proses identifikasi dilakukan, didapati bahwa duplikasi data hanya terdapat pada dataset movies sebanyak 28 observasi. Untuk itu langkah yang diambil adalah melakukan penghapusan data duplikat tersebut agar tidak terdapat noise pada saat proses training dilakukan.
 ### Penyesuaian Lanjutan pada Dataset Movies dan Dataset Ratings
 Beberapa langkah penyesuaian lanjutan yang dilakukan pada dataset movies dan dataset ratings diuraikan sebagai berikut:
@@ -134,14 +138,12 @@ Beberapa langkah penyesuaian lanjutan yang dilakukan pada dataset movies dan dat
 6. **Encoding moviesId dan userId**. Proses encoding pada fitur `userId` dan `movieId` dilakukan untuk menghindari bias pada model yang menganggap angka besar memiliki arti numerik lebih besar — padahal dalam konteks ID, tidak ada arti seperti itu. Encoding mengubah ID menjadi representasi numerik yang berurutan dan netral, sehingga dapat digunakan sebagai indeks dalam embedding layer untuk menangkap hubungan laten antara pengguna dan film. Selain itu, encoding membantu menghindari sparsity dan meningkatkan efisiensi komputasi, terutama saat bekerja dengan dataset berskala besar.
 
 ### Split Data Menjadi Training Set dan Validation Set
-Sebelum proses splitting data dilakukan, terlebih dahulu diidentifikasi `total_user`, `total_movies`, `min_rating`, dan `max_rating`. Item `total_user` dan `total_movies` nantinya akan digunakan saat membangun model rekomendasi, khususnya dalam mendefinisikan ukuran input dan output dari embedding layer. Jumlah ini merepresentasikan dimensi maksimum dari user ID dan movie ID yang digunakan oleh model. Sedangkan `min_rating` dan `max_rating` nantinya digunakan untuk melakukan min-max normalization pada kolom rating agar nilai rating berada pada skala yang seragam (0 hingga 1). Hal ini dilakukan agar model dapat memproses data rating dengan stabil dan lebih cepat.
+Sebelum proses splitting data dilakukan, terlebih dahulu diidentifikasi `total_user`, `total_movies`, `min_rating`, dan `max_rating`. Item `total_user` dan `total_movies` nantinya akan digunakan saat membangun model rekomendasi, khususnya dalam mendefinisikan ukuran input dan output dari embedding layer. Jumlah ini merepresentasikan dimensi maksimum dari user ID dan movie ID yang digunakan oleh model. Sedangkan `min_rating` dan `max_rating` nantinya digunakan untuk melakukan min-max normalization pada kolom rating agar nilai rating berada pada skala yang seragam (0 hingga 1). Hal ini dilakukan agar model dapat memproses data rating dengan stabil dan lebih cepat. **Dalam proses penentuan `min_rating` dan `max_rating` dilakukan juga proses konversi tipe data `ratings` yang awalnya berupa float64 menjadi float32. Hal ini dilakukan untuk meningkatkan efisiensi komputasi dan menghemat penggunaan memori.**
 
 Berikutnya, dilakukan pengacakan pada dataset untuk menghindari bias urutan data sebelum proses split (pembagian) menjadi data pelatihan dan validasi. Jika data tidak diacak, urutannya bisa saja terstruktur (misalnya berdasarkan user tertentu atau film tertentu), yang bisa menyebabkan model belajar dari pola yang tidak mewakili keseluruhan data. Dengan pengacakan, data yang digunakan untuk pelatihan dan validasi menjadi lebih beragam dan acak, sehingga meningkatkan generalisasi model saat diterapkan ke data baru. **Setelah itu, barulah proses splitting data dengan proporsi 80% untuk training dan 20% untuk validasi**
 
-## Modeling
-Pada projek ini model sisten rekomendasi dibuat dengan dua pendekatan, yaitu **Content Based Filtering** dan **Collaborative Filtering**. Rinciannya adalah sebagai berikut:
-### Content Based Filtering
-Dalam proses pembangunan model sistem rekomendasi berdasarkan **content based filtering**, pertama-tama dilakukan ekstraksi tiga kolom penting dari dataframe `df_sample_final`, yaitu movieId, title, dan genres, lalu mengonversinya menjadi list terpisah. Ketiga list tersebut kemudian digunakan untuk membuat dataframe baru bernama cdbf_df yang menyusun ulang informasi film ke dalam format yang lebih ringkas, terdiri dari kolom id, movie_name, dan genres. Contoh output 5 data pertamanya adalah sebagai berikut:
+### Data Preparation Khusus untuk Content Based Filtering
+Terdapat beberapa penyesuaian khusus yang dilakukan pada dataset untuk mendukung pembangunan sistem rekomendasi dengan pendekatan **content based filtering**. Pertama-tama dilakukan ekstraksi tiga kolom penting dari dataframe `df_sample_final`, yaitu movieId, title, dan genres, lalu mengonversinya menjadi list terpisah. Ketiga list tersebut kemudian digunakan untuk membuat dataframe baru bernama cdbf_df yang menyusun ulang informasi film ke dalam format yang lebih ringkas, terdiri dari kolom id, movie_name, dan genres. Contoh output 5 data pertamanya adalah sebagai berikut:
 | id    | movie_name                                | genres                          |
 |-------|--------------------------------------------|----------------------------------|
 | 2454  | The Chronicles of Narnia: Prince Caspian   | [Adventure, Family, Fantasy]    |
@@ -152,7 +154,10 @@ Dalam proses pembangunan model sistem rekomendasi berdasarkan **content based fi
 
 Berikutnya dilakukan proses ekstraksi fitur berbasis konten dari data genre film untuk keperluan sistem rekomendasi berbasis konten (content-based filtering). Pertama, kolom genres pada cbf_df diproses ulang agar setiap daftar genre diubah menjadi satu string yang dipisahkan koma. Hal ini dilakukan karena TfidfVectorizer hanya dapat memproses teks dalam bentuk string, bukan list. Setelah itu, TfidfVectorizer() digunakan untuk membangun representasi fitur berdasarkan teknik TF-IDF (Term Frequency–Inverse Document Frequency), yang mengukur pentingnya kata (dalam hal ini genre) dalam seluruh kumpulan data. Metode .fit() menyesuaikan vektorizer dengan data genre, lalu .get_feature_names_out() menampilkan daftar genre unik sebagai fitur. Kemudian, .fit_transform() digunakan untuk mengubah data genre menjadi matriks TF-IDF, di mana setiap baris merepresentasikan sebuah film dan setiap kolom merepresentasikan bobot kemunculan genre tertentu. Matriks ini akhirnya dikonversi ke bentuk dense (padat) menggunakan .todense() agar lebih mudah diamati dan dianalisis.
 
-Setelah itu dilakukan penghitungan similarity antar film berdasarkan genre menggunakan metode cosine similarity dan menyajikan hasilnya dalam bentuk tabel. Contoh ouput untuk 10 genre film disajikan sebagai berikut:
+## Modeling
+Pada projek ini model sisten rekomendasi dibuat dengan dua pendekatan, yaitu **Content Based Filtering** dan **Collaborative Filtering**. Rinciannya adalah sebagai berikut:
+### Content Based Filtering
+Pada pendekatan ini, metrik utama yang digunakan untuk menghasilkan rekomendasi film adalah **cosine-similarity**. Metrik ini mengukur kesamaan semantik dari genre film yang dipilih oleh pengguna sehingga dapat diperoleh rekomendasi film dengan genre yang mirip atau sesuai dengan film yang disukai oleh pengguna. Penghitungan metrik cosine similarity tersebut dilakukan pada representase vektor genre film yang diperoleh dengan menerapkan TF-IDF seperti yang telah dijelaskan pada bagian **data preparation** sebelumnya. Contoh ouput similarity genre untuk 10 film disajikan pada tabel berikut:
 | movie_name                                      | Dollman vs. Demonic Toys | The Garden of the Finzi-Continis | A Chorus Line | Miller's Crossing | The Prize | Golden Door | The Life Aquatic with Steve Zissou | Forrest Gump | 20,000 Leagues Under the Sea | Blondie Has Servant Trouble |
 |------------------------------------------------|---------------------------|----------------------------------|---------------|--------------------|-----------|--------------|------------------------------------|--------------|-----------------------------|------------------------------|
 | The Life Aquatic with Steve Zissou             | 0.000000                  | 0.395119                         | 0.139037      | 0.158089           | 0.132946  | 0.125903     | 1.000000                           | 0.487409     | 0.506927                    | 0.550954                     |
